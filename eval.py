@@ -13,7 +13,7 @@ import beat_crnn.config as config
 from beat_crnn import beatTracker
 from beat_crnn.data import dataset_splits
 from beat_crnn.model import Beat_CRNN
-from beat_crnn.postprocess import findBeats
+from beat_crnn.postprocess import findBeats, madmomBeats
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
