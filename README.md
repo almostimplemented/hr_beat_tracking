@@ -2,10 +2,6 @@
 
 Beat tracking system based off a piano transcription architecture [1].
 
-A Python virtual environment is bundled with this project.
-
-Please use `source venv/bin/activate` to enable the environment.
-
 ```
 from beat_crnn import beatTracker
 
