@@ -4,8 +4,7 @@ import os
 import torch
 
 from pathlib import Path
-from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
+from torch.utils.data import Dataset, random_split
 
 import beat_crnn.config as config
 
@@ -94,3 +93,63 @@ class BallroomDataset(Dataset):
 
     def __getitem__(self, i):
         return self.items[i]
+
+
+def dataset_splits(seed=42, train_ratio=0.8):
+    """Returns deterministic, pseudo-random splits.
+
+    Args:
+        seed: Random seed for shuffling dataset
+        train_ratio: Value between 0 and 1; proportion of data to use for training.
+            The remaining amount (1 - train_ratio) is split evenly between val/test.
+
+    Returns:
+        Tuple of Datasets: D_train, D_val, D_test
+    """
+    dataset = BallroomDataset()
+
+    N_total = len(dataset)
+    N_train = int(train_ratio * N_total)
+    N_val = (N_total - N_train) // 2
+    N_test = N_total - N_train - N_val
+
+    D_train, D_val, D_test = random_split(
+        dataset, [N_train, N_val, N_test], generator=torch.Generator().manual_seed(seed)
+    )
+
+    return D_train, D_val, D_test
+
+
+def collate_fn(data):
+    max_audio_len = max(item["audio"].shape[0] for item in data)
+    max_target_len = max(item["beats"].shape[0] for item in data)
+    audio_batch = torch.zeros((len(data), max_audio_len))
+    beats_batch = torch.zeros((len(data), max_target_len))
+    downbeats_batch = torch.zeros((len(data), max_target_len))
+    beats_sec_batch = []
+    db_sec_batch = []
+    audio_fn_batch = []
+    for i in range(len(data)):
+        audio_len = data[i]["audio"].shape[0]
+        target_len = data[i]["beats"].shape[0]
+        audio_batch[i] = torch.cat(
+            [data[i]["audio"], torch.zeros((max_audio_len - audio_len))]
+        )
+        beats_batch[i] = torch.cat(
+            [data[i]["beats"], torch.zeros((max_target_len - target_len))]
+        )
+        downbeats_batch[i] = torch.cat(
+            [data[i]["downbeats"], torch.zeros((max_target_len - target_len))]
+        )
+        beats_sec_batch.append(data[i]["beats_sec"])
+        db_sec_batch.append(data[i]["db_sec"])
+        audio_fn_batch.append(data[i]["audio_fn"])
+
+    return {
+        "audio": audio_batch,
+        "beats": beats_batch,
+        "downbeats": downbeats_batch,
+        "beats_sec": beats_sec_batch,
+        "db_sec": db_sec_batch,
+        "audio_fn": audio_fn_batch,
+    }

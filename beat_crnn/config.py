@@ -25,3 +25,6 @@ WINDOW_SIZE = 2048
 FRAMES_PER_SEC = 100
 HOP_SIZE = SAMPLE_RATE // FRAMES_PER_SEC
 MEL_BINS = 128
+
+# Default model to use
+CHECKPOINT = "asym_pos_class_beat_crnn_epoch_87_LR_0.0006.pth"

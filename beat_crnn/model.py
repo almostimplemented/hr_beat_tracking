@@ -148,12 +148,13 @@ class AcousticModelCRnn(nn.Module):
 
         x = x.transpose(1, 2).flatten(2)
         x = F.relu(self.bn5(self.fc5(x).transpose(1, 2)).transpose(1, 2))
-        x = F.dropout(x, p=0.5, training=self.training, inplace=False)
+        x = F.dropout(x, p=0.3, training=self.training, inplace=False)
 
         (x, _) = self.gru(x)
-        x = F.dropout(x, p=0.5, training=self.training, inplace=False)
-        output = torch.sigmoid(self.fc(x))
-        return output
+        x = F.dropout(x, p=0.3, training=self.training, inplace=False)
+        logits = self.fc(x)
+        output = torch.sigmoid(logits)
+        return logits, output
 
 
 class Beat_CRNN(nn.Module):
@@ -189,8 +190,7 @@ class Beat_CRNN(nn.Module):
             freeze_parameters=True,
         )
         self.bn0 = nn.BatchNorm2d(mel_bins)
-        self.crnn = AcousticModelCRnn(1, midfeat)
-        self.db_crnn = AcousticModelCRnn(1, midfeat)
+        self.crnn = AcousticModelCRnn(2, midfeat)
         self.init_weight()
 
     def init_weight(self):
@@ -217,7 +217,6 @@ class Beat_CRNN(nn.Module):
         x = self.bn0(x)
         x = x.transpose(1, 3)
 
-        beats_output = self.crnn(x)  # (batch_size, time_steps, 1)
-        db_output = self.db_crnn(x)
+        logits, output = self.crnn(x)  # (batch_size, time_steps, 1)
 
-        return beats_output, db_output
+        return logits, output
